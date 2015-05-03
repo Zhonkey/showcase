@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="krustnic">
+
+    <title></title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/styles/default.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">    
+    
+    <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script> 
+    
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->    
+    
+</head>
+
+<body>
+    
+    <!-- Page Content -->
+    <div id="container" class="container">
+
+        <h1>Showcase: Пример разработки frontend-приложения при помощи современных инструментов</h1>
+        
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="pull-right"><i>Митяков Александр Владимирович (<a href="mailto:avmityakov@gmail.com">avmityakov@gmail.com</a>)</i></div>
+            </div>            
+        </div>
+        
+        <hr/>
+        <div class="row">
+            <div class="col-lg-12">
+                <p>
+                    В данной статье я хотел бы показать один из примеров того каким образом, как мне кажется, может выглядеть современный процесс разработки веб-приложений. 
+                    Статья может быть интересна начинающим frontend-разработчикам, которые слышали такие слова как модульная разработка, тестирование, системы сборки, менеджер пакетов и прочие, 
+                    но еще не осознали как это все связано между собой.
+                </p>
+                <p>
+                    В качестве примера приложения мы реализуем простой "компонент" для создания блог-поста на основе markdown-разметки. В ходе работы мы будем использовать следующие 
+                    компоненты и инструменты:
+                    
+                    <ul>
+                        <li>CSS: <a href="http://getbootstrap.com/">Bootstrap 3</a>, препроцессор <a href="http://lesscss.org/">LESS</a></li>
+                        <li>Javascript: <a href="http://backbonejs.org/">Backbone</a> (<a href="https://jquery.com/">jQuery</a>, <a href="http://underscorejs.org/">Underscore</a>), 
+                            <a href="http://requirejs.org/">RequireJS</a></li>
+                        <li>Unit-тесты: <a href="http://jasmine.github.io/">Jasmine</a></li>
+                        <li>Менеджер пакетов: <a href="https://www.npmjs.com/">npm</a> (для серверных компонентов), <a href="http://bower.io/">bower</a> (для frontend зависимостей)</li>
+                        <li>Система сборки: <a href="http://gruntjs.com/">Grunt</a></li>
+                    </ul>                    
+                </p>
+            
+                <legend>Задача</legend>            
+                <p>
+                    Итак, что мы будет реализовывать? В качестве примера мы сделаем форму создания блог-поста. У поста будут следующие поля:
+                    <ul>
+                        <li>Название</li>                        
+                        <li>Содержимое (<a href="http://daringfireball.net/projects/markdown/syntax">markdown</a>-разметка)</li>                        
+                    </ul>
+            
+                    Помимо полей для создания поста, на второй части экрана, справа будет живое превью поста. То есть пример того, как он будет выглядеть после публикации, а именно:
+                    <ul>
+                        <li>Заголовок</li>
+                        <li>markdown-текст преобразован в HTML</li>
+                        <li>Примерное время чтения поста (количество символов / средняя скорость чтения в зн./мин.)</li>
+                    </ul>
+                    При любом изменении полей, превью будет соответствующим образом изменяться.
+            
+                </p>
+        
+                <legend>Содержание</legend>
+        
+                <p>
+                    <ol>
+                        <li><a href="#result">Результат</a></li>
+                        <li><a href="#environment">Разворачиваем окружение</a></li>
+                        <li><a href="#libs">Установка клиентских библиотек</a></li>
+                        <li><a href="#requirejs">Подключаем RequireJS</a></li>
+                        <li><a href="#automatization">Автоматизация конфигурации RequireJS</a></li>
+                        <li><a href="#backbone">Разработка приложения на Backbone</a></li>
+                        <li><a href="#unit">Unit-тесты</a></li>
+                        <li><a href="#less">Препроцессор LESS</a></li>
+                        <li><a href="#rjs">Сборка RequireJS-файлов</a></li>
+                        <li><a href="#build">Grunt задача "build"</a></li>
+                    </ol>                    
+                </p>
+    
+                <legend id="result">Результат</legend>
+    
+                <p>
+                    Код итогового приложения доступен на <a href="https://github.com/krustnic/showcase">github</a>, а результат выглядит следующим образом:
+                </p>
+    
+                <iframe src="demo/index.html" style="width:100%;height:400px;" frameborder="0"></iframe>
+        
+                <legend id="environment">Разворачиваем окружение</legend>
+                <p>
+                    Первым делом нам необходимо создать файл-описание нашего проекта для менеджера пакетов npm. Файл имеет имя - "package.json", в нем, помимо базовой информации о 
+                    проекте (название, описание, ...), будут хранится все серверные зависимости нашего приложения (инструменты и ресурсы, которые необходимы для работы). 
+                    Задачей этого файла является возможность в будущем развернуть аналогичное окружение на другой машине будь то рабочая станция вашего коллеги или же production-сервер.
+                    Файл можно создать вручную, но для простоты лучше воспользоваться специальной командой npm: 
+                </p>
+        
+<pre><code class="bash">npm init</code></pre>
+        
+                <p>
+                    Вам будут заданы вопросы касательно вашего приложения/пакета, после ответов на которые будет сгенерирован файл package.json примерно следующего 
+                    содержания:
+                </p>
+        
+<pre>
+<code class="json">
+{
+    "name": "Demo",
+    "version": "1.0.0",
+    "description": "Showcase: современный процесс разработки web-приложений",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "krustnic",
+    "license": "MIT"
+}
+</code>
+</pre>
+                <div class="alert alert-success" role="alert">
+                    Если у вас не установлен <code>npm</code>, то поставьте себе <a href="https://nodejs.org/download/">node</a>, сейчас 
+                    <code>npm</code> поставляется вместе с ним.        
+                </div>               
+        
+                <p>
+                    Теперь с помощью npm мы можем установить необходимые на серверные компоненты. Первым из которым мы установим <a href="http://bower.io/">bower</a>. Bower - это 
+                    менеджер пакетов, как и npm, но заточенный чисто на frontend.
+                </p>                
+        
+                <div class="alert alert-success" role="alert">
+                    Основным отличием <code>npm</code> от <code>bower</code> является их подход к управлению зависимостями. В <code>npm</code> зависимости вложенные, а в 
+                    <code>bower</code> - плоские. Это означает, что с <code>npm</code> для каждого пакета у вас будут подтягиваться зависимости, зависимости зависимостей и так далее. 
+                    На серверной стороне это очень полезно, например, если две необходимые вам библиотеки работают с разными версиями jQuery, то будут установлены обе версии jQuery. 
+                    На стороне клиента такое поведение крайне не желательно (зачем вам подгружать разные версии jQuery?!) и <code>bower</code> установит только одну версию, оставляя 
+                    разбираться в их совместимости вам. По этой причине большинство команд выбирают <code>bower</code> в качестве системы пакетов для frontend (по крайней мере пока npm 
+                    не эволюционирует). Однако если вашим задачам такая особенность <code>npm</code> не мешает - используйте его, консистентность всегда хорошо.
+                </div>    
+        
+                <p>
+                    И так, чтобы установить <code>bower</code> выполним следующую команду:
+                </p>
+        
+<pre><code class="bash hljs">npm install bower --save</code></pre>
+        
+                <p>
+                    Важным моментом здесь является ключ "--save". Он говорит <code>npm</code> о том, что нужно добавить информацию об этом пакете (<code>bower</code>) 
+                    в список зависимостей для нашего проекта. Зависимости описываются в конфигурационном файле нашего проекта/пакета "package.json". После выполнения 
+                    этой команды файл должен выглядеть следующим образом:
+                </p>
+        
+<pre>
+<code class="json">
+{
+    "name": "Demo",
+    "version": "1.0.0",
+    "description": "Showcase: современный процесс разработки web-приложений",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "krustnic",
+    "license": "MIT",
+    "dependencies": {
+        "bower": "^1.4.1"
+    }
+}
+</code>
+</pre>        
+        
+            <div class="alert alert-success" role="alert">
+                Теперь если мы захотим восстановить окружение на другой машине (пока это только пакет <code>bower</code>) нам нужно лишь принести файл "package.json" и 
+                выполнить команду <kbd>npm install</kbd>.
+            </div>
+        
+            <p>
+                Так же как и <code>npm</code>, <code>bower</code>, сохраняет зависимости вашего проекта в свой конфигурационный файл "bower.json". Поэтому нам так же как и с                 
+                <code>npm</code> вначале нужно его создать:
+            </p>
+        
+<pre><code class="bash">bower init</code></pre>
+        
+            <p>
+                В процессе вам будет задан ряд вопросов, ответив на которые вы получите файл "bower.json". Отметим, что на вопрос о том какую технологию загрузки модулей 
+                мы собираемся использовать следует отметить "amd", так как мы планируем использовать библиотеку <code>RequireJS</code>.
+            </p>
+        
+<pre><code class="json">
+{
+  "name": "Demo",
+  "version": "1.0",
+  "authors": [
+    "krustnic <avmityakov@gmail.com>"
+  ],
+  "description": "Showcase: современный процесс разработки web-приложений",
+  "main": "app.js",
+  "moduleType": [
+    "amd"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
+</code></pre>
+
+                <legend id="libs">Установка клиентских библиотек</legend>
+                
+                <p>
+                    Установив <code>bower</code> воспользуемся им для установки необходимых нам клиентских библиотек, а именно: 
+                    <ul>
+                        <li>jQuery</li>
+                        <li>Bootstrap</li>
+                        <li>Underscore</li>
+                        <li>Backbone</li>
+                        <li>RequireJS</li>                        
+                    </ul>
+                    
+                    Обратите внимание, что ряд библиотек зависит друг от друга. Например jQuery нужен для Bootstrap и Backbone, Underscore для Backobone.
+                    <code>Bower</code> знает об этом, поэтому эти зависимые библиотеки мы не будем указывать (хотя никто и не запрещает):                    
+                </p>
+        
+<pre><code class="bash">bower install bootstrap backbone requirejs --save</code></pre>
+        
+                <p>
+                    Так же как и с <code>npm</code> важно указать ключ "--save", чтобы установленные библиотеки добавились в качестве зависимостей к 
+                    нашему проекту в файл "bower.json":
+                </p>
+        
+<pre><code class="json">
+{
+  "name": "Demo",
+  "version": "1.0",
+  "authors": [
+    "krustnic <avmityakov@gmail.com>"
+  ],
+  "description": "Showcase: современный процесс разработки web-приложений",
+  "main": "app.js",
+  "moduleType": [
+    "amd"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.4",
+    "backbone": "~1.1.2",
+    "requirejs": "~2.1.17"
+  }
+}
+</code></pre>
+        
+                <p>
+                    Все устанавливаемые библиотеки сохраняются в папку "bower_components" и если мы заглянем в нее, то увидим все наши библиотеки и их зависимости.
+                    Из этой папки мы и будет загружать их к нам на страницу.
+                </p>
+        
+<pre><code class="bash">bower_components
+├── backbone
+├── bootstrap
+├── jquery
+├── requirejs
+└── underscore
+</code></pre>
+
+                <legend id="requirejs">Подключаем RequireJS</legend>
+                
+                <p>
+                    Ну вот и добралась до самого frontend-а. Так как мы будем использовать загрузчик модулей - RequireJS, то первым делом нам нужно его настроить.                    
+                </p>
+        
+                <div class="alert alert-success" role="alert">
+                    Следует отметить, что <code>RequireJS</code> лишь один из возможных способов работы с модулями в JavaScript. Из наиболее популярных технологий 
+                    работы с модулями можно привести:
+                    <ul>
+                        <li>AMD (Asynchronous module definition)</li>
+                        <li>CommonJS (используется в nodejs модулях)</li>
+                        <li>ES6 (модули из новой спецификации JavaScript)</li>
+                    </ul>
+                    <code>RequireJS</code> реализует технологию AMD. Основным преимуществом AMD в общем и <code>RequireJS</code> в частности является работа "из коробки"
+                    в браузере. Остальные технологии подразумевают ряд предварительных действий перед отправкой их в браузер. Для <code>CommonJS</code> вначале необходимо 
+                    собрать все зависимости в один файл при помощи специального инструментария (например browserify или webpack). ES6-модули в итоге должны отлично работать 
+                    в браузере сразу, но пока EcmaScript 6 поддерживается не всеми браузерами и не в полном объеме. Поэтому так же как и <code>CommonJS</code> необходимо вначале 
+                    "конвертировать" код в пригодный для текущих браузеров формат.
+                </div>
+        
+                <p>
+                    <code>RequireJS</code> позволяет определить модуль (блок кода) и его зависимости, а затем загрузить их на страницу без необходимости прописывать каждый 
+                    <code>&ltscript&gt</code> отдельно:                    
+                </p>
+                
+<pre><code class="javascript">define( [ "a", "b" ], function( a, b ) {
+    var c = function() {};
+    
+    return c;
+});
+</code></pre>
+
+                <p>
+                    В данном примере объявлен модуль с двумя зависимостями <code>a</code> и <code>b</code>. Это означает, что перед добавлением этого модуля на страницу вначале 
+                    будут загружены модули <code>a</code> и <code>b</code>. Для того чтобы импортировать модули существует функция <code>require</code>. В качестве имени модуля, 
+                    с помощью которого его можно импортировать служит путь к этому файлу с опущенным расширением ".js" (Для задания пути к корневой папке скриптов есть специальное 
+                    свойство в конфигурационном файле <code>RequireJS</code>). 
+                </p>
+                
+<pre><code class="javascript">require( [ "c" ], function( c ) {
+    // Using module "c"
+});
+</code></pre>
+        
+                <div class="alert alert-success" role="alert">
+                    В AMD существует возможность явно задавать имя модуля при его объявлении (в качестве первого параметра функции <code>define</code>), однако этого не рекомендуется 
+                    делать в связи с тем, что это создает проблемы с переносимостью данного модуля (коллизии имен между разработчиками). Вместо этого при желании можно задать произвольные 
+                    имена для модулей в централизованном месте - конфигурационном файле <code>RequireJS</code>
+                </div>
+                
+                <p>
+                    Работу с библиотекой <code>RequireJS</code> мы начнем с создания её конфигурационного файла. Создадим файл <kbd>"assets/js/requirejs-config.js"</kbd> следующего 
+                    содержания:
+                </p>
+                
+<pre><code class="javascript">require.config({
+    // Путь относительно, которого будет осуществляться поиск модулей
+    baseUrl: "/assets/js",
+    // Псевдонимы для наших модулей/библиотек
+    paths: {        
+        bootstrap: "../../bower_components/bootstrap/dist/js/bootstrap",
+        jquery: "../../bower_components/jquery/dist/jquery"        
+    },
+    // Описание зависимостей для библиотек, которые не рассчитаны на работу с модулями AMD.
+    // Для них мы задаем зависимости вручную.
+    shim: {
+        bootstrap: {
+            deps: [ "jquery" ]
+        }
+    }
+});
+
+// Загружаем наше приложение (главный скрипт)
+require( [ "app" ] );
+</code></pre>                
+        
+                <p>
+                    И создадим файл который будет точкой входа в наше приложение <kbd>assets/js/app.js</kbd>:
+                </p>
+                
+<pre><code class="javascript">require( [ "bootstrap" ], function() {    
+    // Проверим подгрузилась ли вместе с "bootstrap" его зависимость - jQuery
+    console.info( "jQuery exists: " + (typeof jQuery == "function" ? true : false ) );    
+});
+</code></pre>
+        
+                <p>
+                    Теперь создадим файл <kbd>index.html</kbd> со следующим содержимым и проверим работу <code>RequireJS</code>:
+                </p>
+                
+<pre><code class="html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Showcase: &#1089;&#1086;&#1074;&#1088;&#1077;&#1084;&#1077;&#1085;&#1085;&#1099;&#1081; &#1087;&#1088;&#1086;&#1094;&#1077;&#1089;&#1089; &#1088;&#1072;&#1079;&#1088;&#1072;&#1073;&#1086;&#1090;&#1082;&#1080; web-&#1087;&#1088;&#1080;&#1083;&#1086;&#1078;&#1077;&#1085;&#1080;&#1081;&lt;/title&gt;
+    
+    &lt;link href=&quot;bower_components/bootstrap/dist/css/bootstrap.min.css&quot; rel=&quot;stylesheet&quot;&gt;
+    &lt;script data-main=&quot;assets/js/requirejs-config&quot; src=&quot;bower_components/requirejs/require.js&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>            
+
+            <p>
+                Теперь если мы откроем это страницу в браузере и посмотрим в консоль, то увидим сообщение о том, что jQuery успешно загрузилось вместе со скриптами "bootstrap".
+            </p>
+        
+            <legend id="automatization">Автоматизация конфигурации RequireJS</legend>
+        
+            <p>
+                Теперь, разобравшись с конфигурационным файлом <code>RequireJS</code> нам нужно добавить в него пути к остальным загруженным нами библиотекам. Не будем 
+                спешить делать это в ручную. Большой частью современной разработки web-приложений является автоматизация рутинных действий web-разработчика таких как: минификация, 
+                конкатенация, проверка принятого стиля кодирования и прочих. Не исключением является и обновление конфигурационного файла <code>RequireJS</code>. Действительно, при 
+                каждой установке нового пакета при помощи <code>bower</code> нам необходимо обновить конфигурационный файл <code>RequireJS</code>. Почему бы не автоматизировать этот 
+                процесс?
+            </p>
+            <p>
+                Для автоматизации различных действий существуют различные системы сборки. Наиболее популярными для веб-разработки сейчас являются системы 
+                <a href="http://gruntjs.com/">Grunt</a>, <a href="http://gulpjs.com/">Gulp</a>, <a href="http://volojs.org/">Volo (в меньшей степени)</a>. Мы будем использовать систему 
+                <code>Grunt</code> как ниболее "классическую".
+            </p>
+            <p>
+                Для начала нам нужно её установить. Так как это серверный компонент, то устанавливается он при помощи пакетного менеджера <code>npm</code>:
+            </p>
+            
+<pre><code class="bash">npm install grunt grunt-cli --save-dev</code></pre>
+
+            <p>
+                Мы утсанавливаем два пакета: <code>grunt</code> и <code>grunt-cli</code>. Первый - это сама система сборки, а второй - это инструменты командной строки, которые 
+                позволят нам запускать <code>grunt</code> из консоли.
+            </p>
+        
+            <p>
+                Так же, обратите внимание, что в этот раз вместо ключа <code>"--save"</code> мы используем ключ <code>"--save-dev"</code>. Отличие заключается в том, что устанавливаемый пакет 
+                будет добавлен в конфигурационный файл "package.json" не в секцию "dependencies", а в секцию "devDependencies" (зависимости необходимые только в процессе 
+                разработки), что позволит нам не устанавливать их на "production" систему.
+            </p>            
+            
+            <div class="alert alert-success" role="alert">
+                По умолчанию, при вызове команды <kbd>npm install</kbd> будут установлены все зависимости нашего приложения как из секции "dependencies" так и из секции "devDependencies". 
+                Для того, чтобы произвести установку без зависимостей разработчика необходимо добавть ключ <kbd>-p, --production</kbd>, что приведет к установке зависимостей только из 
+                секции "devDependencies".
+            </div>            
+        
+            <p>
+                Теперь пакет <code>grunt</code> загружен и лежит в папке "node_modules". Сразу же скачаем <a href="https://github.com/yeoman/grunt-bower-requirejs">пакет</a> 
+                - задачу для нашей системы сборки, которая будет обновлять за нас конфигурационный файл <code>RequireJS</code> на основе данных из файла "bower.json":
+            </p>    
+               
+<pre><code class="bash">npm install grunt-bower-requirejs --save-dev</code></pre>
+               
+            <p>
+                Теперь необходимо описать системе <code>grunt</code> что мы от нее хотим. Описание задач для системы сборки происходит в её конфигурационном файле "Gruntfile.js". Давайте 
+                создаим его со следующим содержимым:
+            </p>
+            
+<pre><code class="javascript">module.exports = function(grunt) {    
+    // Конфигуграция задач
+    grunt.initConfig({
+        bowerRequirejs : {
+            target: {
+                // Путь к конфигурационному файлу RequireJS
+                rjsConfig: 'assets/js/requirejs-config.js'
+            },
+            options: {
+                // Опция указывающая, что зависимости установленных пакетов так же следует
+                // добавлять в конфигурационный файл RequireJS
+                // Например: при установке "bootstrap" добавится две записи: "bootstrap" и "jquery"
+                transitive: true
+            }
+        }
+    });
+
+    // Загружаем задачу
+    grunt.loadNpmTasks('grunt-bower-requirejs');
+    
+    // Создаем другое имя задачи по которому мы будем ее вызывать
+    grunt.registerTask('update-requirejs', ['bowerRequirejs']);    
+}
+</code></pre>
+
+                <div class="alert alert-success" role="alert">
+                    Дополнительные конфигурационные опции для данной задачи можно посмотреть на ее странице на <a href="https://github.com/yeoman/grunt-bower-requirejs">github</a>. 
+                </div>
+                
+                <p>
+                    Все, задача готова, теперь ее можно запустить:
+                </p>
+        
+<pre><code class="bash">node_modules/grunt-cli/bin/grunt update-requirejs</code></pre>
+
+                <div class="alert alert-success" role="alert">
+                    В данном примере мы запускаем <code>grunt</code> явно указывая путь к нему, так как <code>grunt</code> установлен локально, только для текущего проекта. 
+                    Алтернативой является глобавльная установка пакетов в систему (пакет будет доступен везде, не только для данного проекта). Для того чтобы установить пакет 
+                    глобально существует ключ <code>npm install ... -g</code>. Однако в этом случае информация о данном пакете не будет добавлена в зависимости вашего проекта, 
+                    поэтому в данном примере мы будем везде использовать локальную установку (ключи <code>--save</code> и <code>--save-dev</code>).
+                </div>
+
+                <p>
+                    После сообщения о том, что задача "bowerRequirejs" успешно отработала, конфигурационный файл <code>RequireJS</code> принял следующий вид:
+                </p>
+
+<pre><code class="javascript">require.config({
+    baseUrl: "assets/js",
+    paths: {
+        bootstrap: "../../bower_components/bootstrap/dist/js/bootstrap",
+        jquery: "../../bower_components/jquery/dist/jquery",
+        backbone: "../../bower_components/backbone/backbone",
+        underscore: "../../bower_components/underscore/underscore",
+        marked: "../../bower_components/marked/lib/marked",
+        requirejs: "../../bower_components/requirejs/require"
+    },
+    shim: {
+        bootstrap: {
+            deps: [
+                "jquery"
+            ]
+        }
+    },
+    packages: [
+
+    ]
+});
+require( [ "app" ] );
+</code></pre>
+
+                <div class="alert alert-success" role="alert">
+                    Обратите внимание, что написанные нами вручную строчки не изменились, лишь расширилась секция "paths" всеми теми пакетами/библиотеками, которые мы установили 
+                    при помощи <code>bower</code>.
+                </div>
+                
+                <p>
+                    Теперь после установки новых пакетов с помощью <code>bower</code> нам достаточно просто запустить эту задачу и конфигурационный файл <code>RequireJS</code> 
+                    будет обновлен автоматически.
+                </p>
+                
+                <legend id="backbone">Разработка приложения на Backbone</legend>
+
+                <p>
+                    Приступим непосредственно к разработке нашей формы создания блог-поста. В качестве фреймворка мы будем использовать <code>Backbone</code>. 
+                    <code>Backbone</code> позволяет сформировать базовую архитектуру, скелет приложения и для этих целей предоставляет следующие компоненты:
+                    <ul>
+                        <li>Model</li>
+                        <li>Collection</li>
+                        <li>View</li>
+                        <li>Router</li>
+                    </ul>
+                    
+                    В нашем приложении мы будем использовать всё кроме роутера и коллекций. Роутер необходим в первую очередь для реализации навигации в SPA (single page application), а 
+                    коллекции это просто набор моделей с приятными дополнительными возможностями (получение с сервера, поиск, фильтрации и т. д.).
+                </p>
+        
+                <p>
+                    Для начала определимся с файловой структурой нашего приложения. При работе с <code>Bacbkone</code> я предпочитаю создавать папку на каждый логический 
+                    блок интерфейса, а внутри делить все файлы по типам: models, collections, views, templates. Для нашей задачи я предлагаю следующую структуру файлов:
+                </p>
+                
+<pre>
+assets
+└── js
+    └── create-post
+        ├── templates
+        ├── views
+        ├── models
+        └── collections
+</pre>
+        
+                <p>
+                    Теперь определимся с иерархией отображений (Views). На самом верхнем уровне будет простая структура - MainView. В ней две дочерние CreateView и 
+                    PreviewView. CreateView сразу будет отобржать поля для ввода: заголовок, текст. PreviewView в свою очередь будет состоять из трех других: 
+                    TitleView, MetaView и TextView.
+                </p>       
+
+                <img src="img/views.svg" alt="">
+        
+                <h3>MainView</h3>
+        
+                <p style="margin-top: 10px;">
+                    Приступим к созданию этих отображений. Начнем с верстки, создадим файл <kbd>assets/js/create-post/templates/main</kbd>:
+                </p>
+
+<pre><code class="html">&lt;div class=&quot;row&quot;&gt;
+    &lt;div data-eid=&quot;create-view&quot; class=&quot;col-md-6&quot;&gt;CreateView&lt;/div&gt;    
+    &lt;div data-eid=&quot;preview-view&quot; class=&quot;col-md-6&quot;&gt;PreviewView&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+        
+                <p>
+                    Так как все зависимости мы собираемся загружать через <code>RequireJS</code> то этот модуль, кусок html-верстки так же следует загружать при помощи <code>RequireJS</code>.
+                    Из коробки <code>RequireJS</code> умеет загружать только скрипты, однако он поддержиет добавление различных плагинов. Плагин для загрузки текстовых файлов 
+                    называется <a href="https://github.com/requirejs/text">text</a> и доступен в <code>bower</code> под именем "requirejs-text". Установим его:
+                </p>
+        
+<pre><code class="bash">node_modules/bower/bin/bower install requirejs-text --save</code></pre>
+        
+                <p>
+                    И сразу же обновим конфигурационный файл <code>RequireJS</code> при помощи нашей <code>grunt</code> задачи:                    
+                </p>
+        
+<pre><code class="bash">node_modules/grunt-cli/bin/grunt update-requirejs</code></pre>
+        
+                <p>
+                    Теперь мы можем загружать обычные текстовые файлы при помощи <code>RequireJS</code>. Для активации плагина в пути к файлу необходимо добавить префикс 
+                    "requirejs-text!" (название модуля с плагином и восклицательный знак на конце). Создаим файл <kbd>assets/js/create-post/views/main</kbd>:
+                </p>
+        
+<pre><code class="javascript">
+define([
+    "backbone",    
+    "requirejs-text!../templates/main.html"
+], function( Backbone, tpl ) {
+
+    var view = Backbone.View.extend({
+        // Кэшируем html-шаблон
+        template : _.template( tpl ),
+
+        initialize : function( options ) {
+
+        },
+
+        render : function() {
+            // Отключаем привязанные события, очищаем элемент и
+            // добавляем в верстку шаблон
+            this.$el.empty().append( this.template() );            
+
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>
+            
+                <div class="alert alert-success" role="alert">
+                    Обратите внимание, что в рамках отображений используется относительные пути "../templates/main.html", это позволит легко перемещать компонент (папку 
+                    create-post) по проекту или между проектами, не боспокоясь о зависимостях.
+                </div>
+        
+                <p>
+                    Немного отредактируем верстку нашей основной страницы - добавим мето куда будем добавлять нашу MainView. Файл <kbd>index.html</kbd>:
+                </p>
+        
+<pre><code class="html">...
+&lt;body&gt;
+    &lt;div id=&quot;content&quot; class=&quot;container&quot;&gt;&lt;/div&gt;    
+&lt;/body&gt;
+...
+</code></pre>
+        
+                <p>
+                    Теперь осталось лишь создать экземпляр нашего отображения MainView и добавить его в верстку. Отредактируем файл <kbd>assets/js/app.js</kbd>:
+                </p>
+        
+<pre><code class="javascript">require( [ "create-post/views/main", "bootstrap" ], function( MainView ) { 
+    var mainView = new MainView();    
+    $("#content").append( mainView.render().$el );
+});
+</code></pre>
+        
+                <p>
+                    Перед тем как приступить к созданию самой формы блог-поста, вначале сделаем модель, которая будет хранить все введенные данные (заголовок, 
+                    текст). Создадим файл <kbd>assets/js/models/post</kbd>:
+                </p>
+        
+<pre><code class="javascript">define( [ "backbone" ], function( Backbone ) {
+    
+    var model = Backbone.Model.extend({ 
+        // Значения по-умолчанию
+        defaults : {
+            "title" : "",            
+            "text"  : ""
+        },
+
+        initialize : function( options ) {
+            
+        }
+    });
+
+    return model;
+});
+</code></pre>
+        
+                <h3>CreateView</h3>
+        
+                <p>
+                    Теперь приступим к реализации формы создания блог-поста CreateView. По аналогии с MainView создадим два файла 
+                    <kbd>assets/js/create-post/templates/create</kbd> и <kbd>assets/js/create-post/views/create</kbd>:
+                </p>
+        
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/create --&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+    &lt;div class=&quot;col-md-12&quot;&gt;
+        &lt;div class=&quot;form-group&quot;&gt;
+            &lt;label&gt;&#1047;&#1072;&#1075;&#1086;&#1083;&#1086;&#1074;&#1086;&#1082;&lt;/label&gt;
+            &lt;input data-eid=&quot;title&quot; type=&quot;text&quot; class=&quot;form-control&quot;&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;row&quot;&gt;
+    &lt;div class=&quot;col-md-12&quot;&gt;
+        &lt;div class=&quot;form-group&quot;&gt;
+            &lt;label&gt;&#1058;&#1077;&#1082;&#1089;&#1090;&lt;/label&gt;
+            &lt;textarea data-eid=&quot;text&quot; cols=&quot;30&quot; rows=&quot;10&quot; class=&quot;form-control&quot;&gt;&lt;/textarea&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/create
+
+define([
+    "backbone",    
+    "requirejs-text!../templates/create.html"
+], function( Backbone, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),
+        
+        events : {
+            "input [data-eid=title]" : "update",            
+            "input [data-eid=text]"  : "update"
+        },
+
+        initialize : function( options ) {
+
+        },
+
+        render : function() {
+            this.$el.empty().append( this.template() );
+            return this;
+        },
+        
+        update : function() {
+            this.model.set( "title", this.$("[data-eid=title]").val() );            
+            this.model.set( "text" , this.$("[data-eid=text]").val() );
+        }
+
+    });
+
+    return view;
+});
+</code></pre>                  
+                                                
+                    </div>
+                </div>
+        
+                <p>
+                    Здесь мы подразумеваем, что в CreateView уже есть модель. Мы добавили два слушателя событий, которые следят за любым изменением полей поста и 
+                    тут же изменяют модель. Теперь нам нужно добавить отрисовку CreateView в MainView. Модифицируем <kbd>assets/js/views/main</kbd>:
+                </p>                        
+                        
+<pre><code class="javascript">define([
+    "backbone",    
+    "../models/post",
+    "../views/create",
+    "requirejs-text!../templates/main.html"
+], function( Backbone, PostModel, CreateView, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),        
+
+        initialize : function( options ) {
+            this.model = new PostModel();
+        },
+
+        render : function() {            
+            this.$el.empty().append( this.template() ); 
+            
+            var createView = new CreateView({
+                model : this.model
+            });    
+            
+            this.$("[data-eid=create-view]").empty().append( createView.render().$el );
+
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>
+                        
+                <p>
+                    При инициализации MainView создается модель для нашего поста и передается во вновь созданное отображение "CreateView". Благодаря тому, 
+                    что сама модель создается в MainView в будущем мы сможем передать тот же экземпляр модели в отображение PreviewView и изменять 
+                    его при каждом ее изменении.
+                </p>
+        
+                <h3>PreviewView</h3>
+        
+                <p>
+                    Создадим отображение PreviewView. По аналогии создаем два файла <kbd>assets/js/create-post/templates/preview</kbd> и 
+                    <kbd>assets/js/create-post/views/preview</kbd>
+                </p>
+        
+        
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/preview --&gt;
+&lt;div data-eid=&quot;title-view&quot;&gt;&lt;/div&gt;    
+&lt;div data-eid=&quot;meta-view&quot;&gt;&lt;/div&gt;
+&lt;div data-eid=&quot;text-view&quot;&gt;&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/preview
+
+define([
+    "backbone",    
+    "requirejs-text!../templates/preview.html"
+], function( Backbone, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),       
+
+        initialize : function( options ) {
+
+        },
+
+        render : function() {
+            this.$el.empty().append( this.template() );
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>                                      
+                                                
+                    </div>
+                </div>
+        
+                <p>
+                    Так же как и в случае с CreateView, обновим <kbd>MainView</kbd> добавив отрисовку вновь созданного отображения.
+                </p>
+        
+<pre><code class="javascript">...
+var previewView = new PreviewView({
+    model : this.model
+});    
+
+this.$("[data-eid=preview-view]").empty().append( previewView.render().$el );
+...
+</code></pre>
+        
+                <div class="alert alert-success" role="alert">
+                    PreviewView это просто контейнер для отображения других "views": TitleView, TextView, MetaView. Мы разбили каждое поле на отдельные элементы по 
+                    двум причинам:
+                    <ol>
+                        <li>Теперь при изменение конкретного поля нашей модели мы можем перерисовать только конкретное отображение, а не всю PreviewView целиком.</li>
+                        <li>MetaView и TextView помимо простого отображения (как TitleView) содержат дополнительную логику, которую с точки зрения модульности 
+                        правильнее вынести в отдельные сущности.</li>
+                    </ol>
+                </div>
+        
+                <h3>TitleView</h3>
+        
+                <p>
+                    Создадим TitleView <kbd>assets/js/create-post/views/title</kbd> и <kbd>assets/js/create-post/templates/title</kbd>
+                </p>
+        
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/title --&gt;
+&lt;div class=&quot;row post-title&quot;&gt;
+    &lt;div class=&quot;col-md-12&quot;&gt;
+        &lt;div&gt;&lt;%= title %&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/title
+
+define([
+    "backbone",    
+    "requirejs-text!../templates/title.html"
+], function( Backbone, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),       
+
+        initialize : function( options ) {
+            // При изменения поля "заголовок" в модели - перерисовывем 
+            // отображение
+            this.listenTo( this.model, "change:title", this.render );
+        },
+
+        render : function() {
+            // Передаем данные из модели в шаблон
+            this.$el.empty().append( this.template( this.model.toJSON() ) );
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>                                      
+                                                
+                    </div>
+                </div>
+        
+                <p>
+                    Добавим в PreviewView код для отображения TitleView. <kbd>assets/js/create-post/views/preview</kbd>:
+                </p>
+        
+<pre><code class="javascript">// assets/js/create-post/views/preview
+
+define([
+    "backbone",    
+    "../views/title",
+    "requirejs-text!../templates/preview.html"
+], function( Backbone, TitleView, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),       
+
+        initialize : function( options ) {
+
+        },
+
+        render : function() {
+            this.$el.empty().append( this.template() );
+            
+            var titleView = new TitleView({
+                model : this.model
+            });
+            
+            this.$("[data-eid=title-view]").empty().append( titleView.render().$el );
+            
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>
+        
+                <p>
+                    Теперь по мере ввода текста в поле "Заголовок" в CreateView, благодаря передаче данных через модель, TitleView будет соотвественно изменяться.
+                </p>
+        
+                <h3>TextView</h3>
+        
+                <p>
+                    Следующее на очереди отображение - TextView, которое должно реагировать на изменение поля "Текст" в CreateView, преобразовывать Markdown-текст в HTML и 
+                    выводить его на экран. Для преобразования Markdown в HTML воспользуемся библотекой <a href="https://github.com/chjj/marked">marked</a>. Для начала установим ее при 
+                    помощи <code>bower</code>:
+                </p>
+        
+<pre><code class="bash">node_modules/bower/bin/bower install marked --save</code></pre>
+        
+                <p>
+                    И, конечно же, не забудем обновить конфигурационный файл <code>RequireJS</code>
+                </p>
+        
+<pre><code class="bash">node_modules/grunt-cli/bin/grunt update-requirejs</code></pre>
+        
+                <p>
+                    Теперь приступим к созданию TextView. <kbd>assets/js/create-post/templates/text</kbd> и <kbd>assets/js/create-post/views/text</kbd>:
+                </p>
+        
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/text --&gt;
+&lt;div class=&quot;row post-text&quot;&gt;
+    &lt;div class=&quot;col-md-12 &quot;&gt;
+        &lt;%= html %&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/text
+
+define([
+    "backbone",    
+    "marked",
+    "requirejs-text!../templates/text.html"    
+], function( Backbone, marked, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),       
+
+        initialize : function( options ) {
+            // При изменения поля "текст" в модели - перерисовывем 
+            // отображение
+            this.listenTo( this.model, "change:text", this.render );
+        },
+
+        render : function() {
+            var html = marked( this.model.get("text") );
+            
+            // Передаем в шаблон HTML-представление текста
+            this.$el.empty().append( this.template( {
+                html : html
+            } ) );
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>                    
+                                                
+                    </div>
+                </div>
+        
+                <p>
+                    Не забудем так же обновить PreviewView для отрисовки нового отображения <kbd>assets/js/create-view/views/preview</kbd>:
+                </p>
+        
+<pre><code class="javascript">...
+var textView = new TextView({
+    model : this.model
+});
+            
+this.$("[data-eid=text-view]").empty().append( textView.render().$el );
+...
+</code></pre>
+        
+                <p>
+                    Теперь мы можем видеть преобразование из Markdown в HTML по мере ввода текста.
+                </p>
+        
+                <h3>MetaView</h3>
+        
+                <p>
+                    Начнем реализацию отображения для вывода примерного времени чтения поста. Пока реализуем простой вариант - просто будем делить количество символов в посте на среднюю 
+                    скорость чтения - 2500 знаков в минуту.
+                </p>
+        
+                <p>
+                    <kbd>assets/js/create-post/templates/meta.html</kbd> и <kbd>assets/js/create-post/views/meta.html</kbd>
+                </p>
+        
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/meta --&gt;
+&lt;div class=&quot;row post-meta&quot;&gt;
+    &lt;div class=&quot;col-md-12&quot;&gt;
+        &#1042;&#1088;&#1077;&#1084;&#1103; &#1095;&#1090;&#1077;&#1085;&#1080;&#1103;: ~&lt;%= readingTime %&gt; &#1084;&#1080;&#1085;&#1091;&#1090;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/meta
+define([
+    "backbone",    
+    "requirejs-text!../templates/meta.html"
+], function( Backbone, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),    
+        
+        // Средняя скорость чтения
+        SYMBOLS_PER_MINUTE : 2500,
+
+        initialize : function( options ) {
+            // При изменения поля "текс" в модели - перерисовывем 
+            // отображение
+            this.listenTo( this.model, "change:text", this.render );
+        },
+
+        render : function() {
+            var readingTime = this.getReadingTime();
+            
+            // Передаем в шаблон время чтения
+            this.$el.empty().append( this.template( {
+                readingTime : readingTime
+            } ) );
+            return this;
+        },
+        
+        // Считаем скорость чтения
+        getReadingTime : function() {
+            var symbolsCount = this._getSymbolsCount( this.model.get("text") );
+            
+            return parseFloat( symbolsCount / this.SYMBOLS_PER_MINUTE ).toFixed (2);
+        },
+        
+        // Получаем количество символов в посте
+        _getSymbolsCount : function( text ) {
+            var count = text.length
+            return count;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>              
+                                                                        
+                    </div>
+                </div>
+        
+                <p>
+                    Так же внесем измения в PreviewView <kbd>assets/js/create-post/views/preview</kbd>:
+                </p>
+        
+<pre><code class="javascript">...
+var metaView = new MetaView({
+    model : this.model
+});
+            
+this.$("[data-eid=meta-view]").empty().append( metaView.render().$el );
+...
+</code></pre>
+                
+                <p>
+                    Теперь по мере ввода текста будет изменяться примерное время чтения поста. Пока вычисление времени уж очень примерное и не учитывает большое количиство символов 
+                    разметки Markdow. Однако мы немного улучшим расчет в следующем разделе.
+                </p>
+        
+                <p>
+                    В принципе, функционально наше приложение готово. Далее мы немного улучшим вычисление среднего времени чтения и займемся настройкой стилей.
+                </p>
+        
+                <legend id="unit">Unit-тесты</legend>
+        
+                <p>
+                    Важность тестирования приходит с опытом. На данный момент тестирование - это единственный способ избежать возникновения новых ошибок в процессе рефакторинга или 
+                    изменения кода. Видов тестирования существует большое множество, но для frontend-а я бы выделил два основных:
+                    <ul>
+                        <li>Unit-тесты</li>
+                        <li>Приемочные, функциональные тесты</li>
+                    </ul>        
+                </p>
+                <p>
+                    Функциональные тесты проверяют не столько ваш код сколько ваш интерфейс и функционал. Тесты представляют собой не последовательность вызовов ваших функций, а 
+                    последовательность действий пользователя вашего приложения (клик, набор текста, нажатие на кнопку). Когда запускаются функциональные тесты они имитируют работу обычного 
+                    человека, который пользуется вашим приложением. Для написания таких тестов существует ряд инструментов таких как <a href="http://www.seleniumhq.org/">Selenium</a>, 
+                    <a href="http://casperjs.org/">CaspersJS</a>, <a href="https://jarvisjs.com/">JarvisJS</a>, <a href="http://webdriver.io/">Webdriver.io</a>, <a href="http://dalekjs.com/">DalekJS</a> и другие. В текущем примере 
+                    функциональные тесты мы рассматривать не будем.
+                </p>
+                <p>
+                    Unit-тесты в свою очередь проверяют именно ваш код, соответствие результатов работы функции некоторым референсным значениям. Рассмотрим пример разработки тестов при 
+                    помощи фреймворка <code>Jasmine</code> на примере нашей функции вычисления среднего времени чтения поста.
+                </p>
+                <p>
+                    В свою очередь unit-тесты можно разделить на два типа:
+                    <ul>
+                        <li>Запускаемые в браузере</li>
+                        <li>Запускаемые на сервере</li>
+                    </ul>
+                </p>
+    
+                <p>
+                    В браузере запускаются тесты, которым нужно соответсвующее окружение, например, нужен DOM. Если бы мы хотели протестировать наши <code>Backbone</code>-отображения, то 
+                    следовало бы запускать наши тесты в браузере. Минусом запуска тестов в браузере является относительная сложность автоматизации тестирования - для этих целей нужно 
+                    подключать и настраивать <a href="http://phantomjs.org/">PhantomJS</a> или тот же <a href="http://www.seleniumhq.org/">Selenium</a>.
+                </p>
+    
+                <p>
+                    Тестирование на сервере наоборот легко поддается автоматизации, так как не зависит ни от чего кроме <code>NodeJS</code>. Так как отображения в нашем примере довольно 
+                    простые и у нас есть намерение максимально использовать <code>grunt</code> в процессе нашей разработки, то мы займемся тестированием именно на стороне сервера.                    
+                </p>
+    
+                <p>
+                    Первым делом нам нужно немного отрефакторить наш код. Мы хотим покрыть тестами функционал вычисления примерного времини чтения нашего поста. Сейчас он находится в 
+                    <code>Backbone</code>-view, что услажняет нам тестирование на стороне сервера. Вынесем функции расчета в отделный файл <kbd>assets/js/create-post/utils/tools.js</kbd>:
+                </p>
+    
+<pre><code class="javascript">define( function() {
+    return {
+        
+        // Считаем скорость чтения
+        getReadingTime : function( text, speed ) {
+            var symbolsCount = this.getSymbolsCount( text );
+            
+            return parseFloat( symbolsCount / speed ).toFixed (2);
+        },
+        
+        // Получаем количество символов в строке
+        getSymbolsCount : function( text ) {
+            var count = text.length
+            return count;
+        }
+        
+    };
+} );
+</code></pre>
+    
+                <p>
+                    И соответствующим  образом поправим MetaView, <kbd>assets/js/create-post/views/meta</kbd>:
+                </p>
+    
+<pre><code class="javascript">// assets/js/create-post/views/meta
+define([
+    "backbone",   
+    "../utils/tools",
+    "requirejs-text!../templates/meta.html"
+], function( Backbone, Tools, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),    
+        
+        // Средняя скорость чтения
+        SYMBOLS_PER_MINUTE : 2500,
+
+        initialize : function( options ) {
+            // При изменения поля "текс" в модели - перерисовывем 
+            // отображение
+            this.listenTo( this.model, "change:text", this.render );
+        },
+
+        render : function() {
+            var readingTime = Tools.getReadingTime( this.model.get("text"), this.SYMBOLS_PER_MINUTE );
+            
+            // Передаем в шаблон время чтения
+            this.$el.empty().append( this.template( {
+                readingTime : readingTime
+            } ) );
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>
+    
+                <p>
+                    Теперь функционал вычисления среднего времени чтения никак не связан с наличием DOM и мы можем легко тестировать наши функции на сервере. Перед тем как начать 
+                    разработку тестов настроим рабочее окружение. Установим библиотеку <code>Jasmine-node</code>:
+                </p>            
+        
+<pre><code class="bash">npm install jasmine-node --save-dev</code></pre>
+    
+                <p>
+                    Для запуска тестов <code>jasmine-node</code> необходимо указать папку, в которой <code>jasmine-node</code> будет искать файлы заканчивающиейся на *.spec.js. 
+                    (на *spec.coffee и *spec.litcoffee если вы пишете на CoffeeScript). Я предпочитаю не выносить тесты в отдельную папку и хранить их вместе с тем кодом, который они 
+                    покрывают. Создадим файл <kbd>assets/js/create-post/utils/tools.spec.js</kbd> со следующим содержимым:
+                </p>
+    
+<pre><code class="javascript">describe("Пример теста", function() {
+  it("Пример верного утверждения: true === true", function() {
+    expect(true).toBe(true);
+  });
+  
+  it("Пример не верного утверждения: true === false", function() {
+    expect(true).toBe(false);
+  });
+});
+</code></pre>
+    
+                <p>
+                    Теперь перед нами пример самого простого теста. Глобальная функция <code>describe</code> создает конкретный тест, а функция <code>it</code> добавляет в 
+                    него "утверждения" (конкретные проверки для теста). В одном файле может множетсво тестов (<code>describe</code>), а в каждом тесте может быть множество 
+                    утверждений (<code>it</code>). Теперь запустим <code>jasmine-node</code> указав в качестве папки - текущую (корень нашего проекта):
+                </p>    
+    
+<pre><code class="bash">node_modules/jasmine-node/bin/jasmine-node .</code></pre>
+    
+                <div class="alert alert-success" role="alert">
+                    Для проверки утверждений используется запись вида <code>expect( subject ).toVerb( value )</code>:<br/><br/>
+                    <pre><code class="javascript">expect(fn).toThrow(e);
+expect(instance).toBe(instance);
+expect(mixed).toBeDefined();
+expect(mixed).toBeFalsy();
+expect(number).toBeGreaterThan(number);
+expect(number).toBeLessThan(number);
+expect(mixed).toBeNull();
+expect(mixed).toBeTruthy();
+expect(mixed).toBeUndefined();
+expect(array).toContain(member);
+expect(string).toContain(substring);
+expect(mixed).toEqual(mixed);
+expect(mixed).toMatch(pattern);</code></pre>
+                </div>
+    
+                <p>
+                    Как мы видим <code>jasmine-node</code> нашел спецификацию нашего теста и запустил её. Как и ожидалось в нашем тесте содержится одна ошибка. Теперь приступим к 
+                    реализации тестов для нашего функционала. Для начала необходимо загрузить наш модуль (файл "tools.js") в тесте. Сложность заключается в том, что наш модуль 
+                    описан в AMD-стиле, а из коробки <code>NodeJS</code> понимает только CommonJS-стиль. Для решения этой проблемы установим билиотеку для загрузки AMD-модулей, 
+                    например, <a href="https://github.com/arqex/amdrequire">amdrequire</a>:
+                </p>
+    
+<pre><code class="bash">npm install amdrequire --save-dev</code></pre>
+    
+                <p>
+                    Теперь используем её в нашем тесте, <kbd>assets/js/create-post/utils/tools.spec.js</kbd>:
+                </p>
+    
+<pre><code class="javascript">require = require('amdrequire');
+
+require( [ "./tools" ], function(Tools) {
+   
+    describe("Получение количества значащих символов в строке", function() {    
+        it("Только буквы", function() {
+            var text = "qwerty";
+
+            expect( Tools.getSymbolsCount( text ) ).toBe( 6 );
+        });  
+    });
+    
+    describe("Вычисление примерного времени чтения поста", function() {    
+        it("Пустая строка", function() {
+            var text = "";
+
+            expect( Tools.getReadingTime( text, 2500 ) == 0.00 ).toBe( true );
+        });  
+        
+        it("Проверка алгоритма: 6 / 3", function() {
+            var text = "qwerty";
+
+            expect( Tools.getReadingTime( text, 3 ) == 2 ).toBe( true );
+        });  
+        
+        it("Значение - вещественное число, округление до 2 знаков: 2 / 2500.", function() {
+            var text = "ab";
+
+            expect( Tools.getReadingTime( text, 2500 ) == 0.00 ).toBe( true );
+        });  
+    });
+    
+});
+</code></pre>
+    
+                <p>
+                    И так - простой набор тестов реализован, теперь добавим в <code>grunt</code> задачу для запуска наших тестов. Для этого установим пакет 
+                    <a href="https://github.com/jasmine-contrib/grunt-jasmine-node">grunt-jasmine-node</a>:
+                </p>
+    
+<pre><code class="bash">npm install grunt-jasmine-node --save-dev</code></pre>
+    
+                <p>
+                    И обновим конфигурационный файл <code>grunt</code> <kbd>Gruntfile.js</kbd>
+                </p>
+    
+<pre><code class="javascript">module.exports = function(grunt) {    
+    // Конфигуграция задач
+    grunt.initConfig({
+        bowerRequirejs : {
+            target: {
+                // Путь к конфигурационному файлу RequireJS
+                rjsConfig: 'assets/js/requirejs-config.js'
+            },
+            options: {
+                // Опция указывающая, что зависимости установленных пакетов так же следует
+                // добавлять в конфигурационный файл RequireJS
+                // Например: при установке "bootstrap" добавится две записи: "bootstrap" и "jquery"
+                transitive: true
+            }
+        },
+        
+        jasmine_node: {
+            options: {
+                forceExit: true,
+                match: '.',
+                matchall: false,
+                extensions: 'js',
+                specNameMatcher: 'spec'
+            },
+            all: ['.']
+        }
+    });
+
+    // Загружаем задачи
+    grunt.loadNpmTasks('grunt-bower-requirejs');
+    grunt.loadNpmTasks('grunt-jasmine-node');
+    
+    // Создаем другое имя задачи по которому мы будем ее вызывать
+    grunt.registerTask('update-requirejs', ['bowerRequirejs']);    
+    grunt.registerTask('test', ['jasmine_node']);    
+}
+</code></pre>
+    
+                <p>
+                    Теперь запускать тесты можно с помощью задачи <code>grunt</code>:
+                </p>
+    
+<pre><code class="bash">node_modules/grunt-cli/bin/grunt test</code></pre>
+    
+                <div class="alert alert-success" role="alert">
+                    В данный момент использование <code>grunt</code> не кажется действительно необходимым, так как одну команду запуска <code>jasmine-node</code> мы заменили на 
+                    одну команду запуска <code>grunt</code>. Однако использование <code>grunt</code> несет дополнительные бонусы. Во-первых в будущем мы сможем объединять целые 
+                    цепочки команд в одну. Например задача "build", которая будет запускать тесты, минифицировать код, компилировать и минифицировать стили. Так же это решает ряд 
+                    проблем с общением внутри команды, все параметры запуска сохранены в центральном месте - "Gruntfile.js", а выполнив команду <code>grunt --help</code> 
+                    можно просмотреть список всех доступных в данном проекте задач.
+                </div>
+    
+                <p>
+                    Чтож, теперь давайте немного улучшим наш алгоритм определения среднего времени чтения блог-поста:
+                    <ul>
+                        <li>Изменим функцию получения количества символов так, чтобы она считала только значащие символы (исключая пробелы, знаки припинания, markdown-разметку)</li>
+                        <li>Изменим функцию вычисления времени так, чтобы она выдавала более человеко-читаемые формулировки ( "меньше минуты", "около 3-ех минут", "меньше 5 минут", 
+                            "около 10 минут", "стоит запастись терпением")</li>
+                    </ul>
+                    Помимо облегчения рефакторинга - важной функцией тестов ялвяется самодокументирование кода. Читая хорошо написанные тесты легко понять что делает 
+                    определеный функционал и как его использовать. Перед тем как реализовать запланированный функционал вначале напишем для него тесты, 
+                    <kbd>assets/js/create-post/utils/tools.spec.js</kbd>:
+                </p>
+    
+<pre><code class="javascript">require = require('amdrequire');
+
+require( [ "./tools" ], function(Tools) {
+   
+    describe("Получение количества значащих символов в строке.", function() {    
+        it("Только буквы", function() {
+            var text = "qwerty";
+
+            expect( Tools.getSymbolsCount( text ) ).toBe( 6 );
+        });  
+        
+        it("Исключение знаков препинания", function() {
+            var text = "qwe,,..  ,rty,..!   ";
+
+            expect( Tools.getSymbolsCount( text ) ).toBe( 6 );
+        });
+        
+        it("Исключение специальных знаков", function() {
+            var text = "qwe##r#__t__-=<y>*";
+
+            expect( Tools.getSymbolsCount( text ) ).toBe( 6 );
+        });
+    });
+    
+    describe("Вычисление примерного времени чтения поста.", function() {    
+        it("Пустая строка", function() {
+            var text = "";
+
+            expect( Tools.getReadingTime( text, 2500 ) == 0.00 ).toBe( true );
+        });  
+        
+        it("Проверка алгоритма: 6 / 3", function() {
+            var text = "qwerty";
+
+            expect( Tools.getReadingTime( text, 3 ) == 2 ).toBe( true );
+        });  
+        
+        it("Значение - вещественное число, округление до 2 знаков: 2 / 2500.", function() {
+            var text = "ab";
+
+            expect( Tools.getReadingTime( text, 2500 ) == 0.00 ).toBe( true );
+        });  
+    });
+    
+    describe("Получение человеко-читаемого обозначения времени.", function() {    
+        it("Меньше минуты", function() {            
+            expect( Tools.getReadingTimeText( 0.5 ) == "меньше минуты" ).toBe( true );
+            expect( Tools.getReadingTimeText( 1.5 ) == "меньше минуты" ).toBe( true );
+        });  
+        
+        it("Около трех минут", function() {            
+            expect( Tools.getReadingTimeText( 1.6  ) == "около трех минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 2.5  ) == "около трех минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 3    ) == "около трех минут" ).toBe( true );            
+            expect( Tools.getReadingTimeText( 3.5  ) == "около трех минут" ).toBe( true );            
+        });  
+        
+        it("Меньше 5 минут", function() {            
+            expect( Tools.getReadingTimeText( 3.6 ) == "меньше 5 минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 4   ) == "меньше 5 минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 5   ) == "меньше 5 минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 5.5 ) == "меньше 5 минут" ).toBe( true );
+        });
+        
+        it("Около 10 минут", function() {            
+            expect( Tools.getReadingTimeText( 5.6 ) == "около 10 минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 7   ) == "около 10 минут" ).toBe( true );
+            expect( Tools.getReadingTimeText( 12  ) == "около 10 минут" ).toBe( true );
+        });
+        
+        it("Стоит запастись терпением", function() {            
+            expect( Tools.getReadingTimeText( 13 ) == "стоит запастись терпением" ).toBe( true );
+            expect( Tools.getReadingTimeText( 30 ) == "стоит запастись терпением" ).toBe( true );
+        });
+    });
+    
+});
+</code></pre>
+
+                <p>
+                    Теперь у нас простая задача - сделать так, чтобы наши тесты проходили. Отредактируем файл <kbd>assets/js/create-post/utils/tools</kbd>:
+                </p>
+
+<pre><code class="javascript">define( function() {
+    return {
+        
+        // Считаем скорость чтения
+        getReadingTime : function( text, speed ) {
+            var symbolsCount = this.getSymbolsCount( text );
+            
+            return parseFloat( symbolsCount / speed ).toFixed (2);
+        },
+        
+        getReadingTimeText : function( minutes ) {
+            var text = "стоит запастись терпением";
+            
+            if ( minutes <= 1.5 ) {
+                return "меньше минуты";
+            }
+            
+            if ( minutes <= 3.5 ) {
+                return "около трех минут";
+            }
+            
+            if ( minutes <= 5.5 ) {
+                return "меньше 5 минут";
+            }
+            
+            if ( minutes <= 12 ) {
+                return "около 10 минут";
+            }
+                
+            return text;                
+        },
+        
+        // Получаем количество символов в строке
+        getSymbolsCount : function( text ) {
+            // Предварительно уберем все незначащие символы
+            var re;
+            var special = " .,!#?-_+*=[]{}()<>$@%^&";
+            
+            for( var i = 0; i < special.length; i++ ) {
+                var s = special[i];
+                
+                re = new RegExp("\\" + s, "g");
+                text = text.replace( re, '' );
+            };
+            
+            var count = text.length
+            return count;
+        }
+        
+    };
+} );
+</code></pre>
+    
+                <p>
+                    Теперь обновим MetaView, так чтобы она использовала новую функцию <code>getReadingTimeText</code>. <kbd>assets/js/create-post/templates/meta</kbd> и 
+                    <kbd>assets/js/create-post/views/meta</kbd>:
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+<pre><code class="html">&lt;!-- assets/js/create-post/templates/meta --&gt;
+&lt;div class=&quot;row post-meta&quot;&gt;
+    &lt;div class=&quot;col-md-12&quot;&gt;
+        &#1042;&#1088;&#1077;&#1084;&#1103; &#1095;&#1090;&#1077;&#1085;&#1080;&#1103;: &lt;%= readingTime %&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+                    </div>
+                    
+                    <div class="col-md-6">
+<pre><code class="javascript">// assets/js/create-post/views/meta
+define([
+    "backbone",   
+    "../utils/tools",
+    "requirejs-text!../templates/meta.html"
+], function( Backbone, Tools, tpl ) {
+
+    var view = Backbone.View.extend({
+        template : _.template( tpl ),    
+        
+        // Средняя скорость чтения
+        SYMBOLS_PER_MINUTE : 2500,
+
+        initialize : function( options ) {
+            // При изменения поля "текс" в модели - перерисовывем 
+            // отображение
+            this.listenTo( this.model, "change:text", this.render );
+        },
+
+        render : function() {
+            var readingTime = Tools.getReadingTimeText( Tools.getReadingTime( this.model.get("text"), this.SYMBOLS_PER_MINUTE ) );
+            
+            // Передаем в шаблон время чтения
+            this.$el.empty().append( this.template( {
+                readingTime : readingTime
+            } ) );
+            return this;
+        }
+
+    });
+
+    return view;
+});
+</code></pre>                    
+                                                
+                    </div>
+                </div>
+
+
+                <legend id="less">Препроцессор LESS</legend>
+                
+                <p>
+                    Займемся теперь внешним видом нашего приложения. Для создания CSS стилей мы воспользуемся препроцессором. Препроцессоры CSS - это языки, призванные исправить 
+                    недостатки CSS. Препроцессор предлагает альтернативный синтаксис и новые возможности такие как: переменные, примеси, продвинутое наследование и т. п. Затем код 
+                    написанный на препроцессоре конвертируется в обычный CSS. Существует несколько популярных на данный момент препроцессоров это: <a href="http://lesscss.org/">LESS</a>, 
+                    <a href="http://sass-lang.com/">SASS</a>, <a href="https://learnboost.github.io/stylus/">Stylus</a>. В нашем примере мы воспользуемся препроцессором <code>LESS</code>. 
+                    Начнем с того, что создадим две папки: <kbd>css</kbd> и <kbd>less</kbd>. И создадим файл <kbd>assets/less/main.less</kbd>:
+                </p>
+                
+<pre><code class="less">// Цвет заголовка и мета-информации
+@titleColor : #8E8E8E;
+
+#content {
+    margin-top: 50px;
+}
+
+.post-title {
+    min-height: 50px;
+    font-size: 24px;
+    font-style: italic;
+    margin-top: 24px;
+    color: @titleColor;
+}
+
+.post-meta {
+    text-align: right;
+    color : @titleColor;
+}
+
+.post-text {
+    border: 1px solid rgb(208, 208, 208);
+    border-radius: 4px;
+    margin-top: 6px;
+    min-height: 50px;
+}
+</code></pre>
+
+                    <p>
+                        Для того, чтобы преобразовать less-файл в css-файл нам понадобиться установить одноименный пакет <a href="https://github.com/less/less.js">less.js</a>:
+                    </p>
+                    
+<pre><code class="bash">npm install less --save-dev</code></pre>
+
+                    <p>
+                        И сразу же установим <code>grunt</code>-задачу <a href="https://github.com/gruntjs/grunt-contrib-less">grunt-contrib-less</a>
+                    </p>
+                    
+<pre><code class="bash">npm install grunt-contrib-less --save-dev</code></pre>
+
+                    <p>
+                        Добавим задачу в конфигурационный файл <code>Gruntfile.js</code>:
+                    </p>
+                    
+<pre><code class="javascript">module.exports = function(grunt) {    
+    // Конфигуграция задач
+    grunt.initConfig({
+        bowerRequirejs : {
+            target: {
+                // Путь к конфигурационному файлу RequireJS
+                rjsConfig: 'assets/js/requirejs-config.js'
+            },
+            options: {
+                // Опция указывающая, что зависимости установленных пакетов так же следует
+                // добавлять в конфигурационный файл RequireJS
+                // Например: при установке "bootstrap" добавится две записи: "bootstrap" и "jquery"
+                transitive: true
+            }
+        },
+        
+        jasmine_node: {
+            options: {
+                forceExit: true,
+                match: '.',
+                matchall: false,
+                extensions: 'js',
+                specNameMatcher: 'spec'
+            },
+            all: ['.']
+        },
+        
+        less: {
+            compile: {                
+                files: {
+                    'assets/css/main.css': 'assets/less/main.less'
+                }
+            }
+        }
+            
+    });
+
+    // Загружаем задачи
+    grunt.loadNpmTasks('grunt-bower-requirejs');
+    grunt.loadNpmTasks('grunt-jasmine-node');
+    grunt.loadNpmTasks('grunt-contrib-less');
+    
+    // Создаем другое имя задачи по которому мы будем ее вызывать
+    grunt.registerTask('update-requirejs', ['bowerRequirejs']);    
+    grunt.registerTask('test', ['jasmine_node']);        
+}
+</code></pre>
+
+                <p>
+                    Теперь запустив grunt-задачу "less" мы получим файл <kbd>assets/css/main.css</kbd>:
+                </p>
+                
+<pre><code class="bash">node_modules/grunt-cli/bin/grunt less</code></pre>
+
+<pre><code class="css">#content {
+  margin-top: 50px;
+}
+.post-title {
+  min-height: 50px;
+  font-size: 24px;
+  font-style: italic;
+  margin-top: 24px;
+  color: #8e8e8e;
+}
+.post-meta {
+  text-align: right;
+  color: #8e8e8e;
+}
+.post-text {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  margin-top: 6px;
+  min-height: 50px;
+}
+</code></pre>
+
+                <p>
+                    Добавим загрузку файла <kbd>assets/css/main.css</kbd> в файл <kbd>index.html</kbd>. Теперь наши стили, описанные в less-файле применились к нашей странице. Используя 
+                    <code>LESS</code> мы больше не будем работать с CSS-файлами напрямую, поэтому сразу займемся их минификацией. Для этого установим очередную <code>grunt</code>-задачу 
+                    <a href="https://github.com/gruntjs/grunt-contrib-cssmin">grunt-contrib-cssmin</a>
+                </p>
+                
+<pre><code class="bash">npm install grunt-contrib-cssmin --save-dev</code></pre>
+
+                <p>
+                    Добавим задачу в конфигурационный файл <code>grunt</code> <kbd>Gruntfile.js</kbd>:
+                </p>
+                
+<pre><code class="javascript">module.exports = function(grunt) {    
+    // Конфигуграция задач
+    grunt.initConfig({
+        bowerRequirejs : {
+            target: {
+                // Путь к конфигурационному файлу RequireJS
+                rjsConfig: 'assets/js/requirejs-config.js'
+            },
+            options: {
+                // Опция указывающая, что зависимости установленных пакетов так же следует
+                // добавлять в конфигурационный файл RequireJS
+                // Например: при установке "bootstrap" добавится две записи: "bootstrap" и "jquery"
+                transitive: true
+            }
+        },
+        
+        jasmine_node: {
+            options: {
+                forceExit: true,
+                match: '.',
+                matchall: false,
+                extensions: 'js',
+                specNameMatcher: 'spec'
+            },
+            all: ['.']
+        },
+        
+        less: {
+            compile: {                
+                files: {
+                    'assets/css/main.css': 'assets/less/main.less'
+                }
+            }
+        },
+        
+        cssmin: {
+            // Минифицируем все файлы в папке assets/css и 
+            // добавим им расширение ".min.css"
+            target: {
+                files: [{
+                    expand: true,
+                    cwd: 'assets/css',
+                    src: ['*.css', '!*.min.css'],
+                    dest: 'assets/css',
+                    ext: '.min.css'
+            }]
+          }
+        }
+            
+    });
+
+    // Загружаем задачи
+    grunt.loadNpmTasks('grunt-bower-requirejs');
+    grunt.loadNpmTasks('grunt-jasmine-node');
+    grunt.loadNpmTasks('grunt-contrib-less');
+    grunt.loadNpmTasks('grunt-contrib-cssmin');
+    
+    // Создаем другое имя задачи по которому мы будем ее вызывать
+    grunt.registerTask('update-requirejs', ['bowerRequirejs']);    
+    grunt.registerTask('test', ['jasmine_node']);        
+}
+</code></pre>
+
+                <p>
+                    Теперь выполним <code>grunt</code>-задачу "cssmin" мы получим минифицированный файл <kbd>assets/css/main.min.css</kbd>
+                </p>
+                
+<pre><code class="css">#content{margin-top:50px}.post-title{min-height:50px;font-size:24px;font-style:italic;margin-top:24px;color:#8e8e8e}.post-meta{text-align:right;color:#8e8e8e}.post-text{border:1px solid #d0d0d0;border-radius:4px;margin-top:6px;min-height:50px}
+</code></pre>
+                
+                <legend id="rjs">Сборка RequireJS-файлов</legend>
+                
+                <p>
+                    Разобравшись с минификацией CSS-файлов нужно  сделать тоже и с javascript-файлами. Однако перед тем как минифицировать сначала нужно собрать все наши скрипты в 
+                    один файл особым образом в порядке разрешения их зависимостей. Задача не самая простая, но к с счастью разработчики <code>RequireJS</code> так же предоставляют и 
+                    инструмент для сборки и минификации скриптов написанных при помощи <code>RequireJS</code>. Инструмент называется <code>r.js</code>. 
+                </p>
+                <p>
+                    Как обычно установим <code>grunt</code>-задачу <a href="https://github.com/gruntjs/grunt-contrib-requirejs">grunt-contrib-requirejs</a>:
+                </p>
+                
+<pre><code class="bash">npm install grunt-contrib-requirejs --save-dev</code></pre>
+
+                <p>
+                    И обновим <kbd>Gruntfile.js</kbd>:
+                </p>
+                
+<pre><code class="javascript">...
+requirejs: {
+    compile: {
+        options: {
+            baseUrl: "assets/js",
+            mainConfigFile: "assets/js/requirejs-config.js",
+            name: "app",
+            out: "assets/js/dist.js"
+        }
+    }
+}
+...
+</code></pre>
+
+                <p>
+                    Теперь выполнив <code>grunt</code>-задачу "requirejs" мы получим один минифицированный файл со всеми нашими модулями собранными в нужно порядке. Теперь, если 
+                    мы подменим вызов "app" на вызов "dist" в файле <kbd>assets/js/requirejs-config.js</kbd>, то получим окончательный результат - production-версию нашего приложения.
+                </p>
+                
+                <legend id="build">Grunt задача "build"</legend>
+                
+                <p>
+                    Теперь c помощью <code>grunt</code> мы умеем делать следующие вещи:
+                    <ul>
+                        <li>Обновлять конфигурацию RequireJS на основе файла "bower.json"</li>
+                        <li>Запускать тесты</li>
+                        <li>Преобразовывать LESS в CSS</li>
+                        <li>Минифицировать CSS-файлы</li>
+                        <li>Склеивать и минифицировать AMD-скрипты</li>                        
+                    </ul>
+                    
+                    Создадим одну задачу, которая будет выполнять все эти действия сразу. Для это добавим в конфигурационный файл <code>grunt</code> 
+                    <kbd>Gruntfile.js</kbd> следующий код:
+                </p>
+                
+<pre><code class="javascript">grunt.registerTask('build', [ 'bowerRequirejs', 'jasmine_node', 'less', 'cssmin', 'requirejs' ]);</code></pre>
+                
+                <p>
+                    Теперь вызов <code>grunt</code>-задачи <code>build</code> будет выполнять полную сборку нашего приложения. На этом, пожалуй, можно и закончить - мы реализовали 
+                    простое веб-приложение при помощи современных инструментов разработки. Спасибо за внимание.
+                </p>
+
+            </div>
+        </div>
+    
+        <div class="end">
+            <img src="img/end.gif">
+        </div>
+
+    </div>
+    <!-- /.container -->
+
+</body>
+
+</html>
